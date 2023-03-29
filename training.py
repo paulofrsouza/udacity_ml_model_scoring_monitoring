@@ -5,13 +5,9 @@ Author: Paulo Souza
 Date: Mar 2023
 '''
 
-#rom flask import Flask, session, jsonify, request
 import pandas as pd
-#mport numpy as np
 import pickle
 import os
-#rom sklearn import metrics
-#rom sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import json
 
