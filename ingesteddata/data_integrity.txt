@@ -1,0 +1,16 @@
+Variable: lastmonth_activity
+---------------
+Missing data percentage: 0.0 %
+
+Variable: lastyear_activity
+---------------
+Missing data percentage: 0.0 %
+
+Variable: number_of_employees
+---------------
+Missing data percentage: 0.0 %
+
+Variable: exited
+---------------
+Missing data percentage: 0.0 %
+
