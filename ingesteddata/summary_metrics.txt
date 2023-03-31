@@ -1,24 +1,24 @@
 Variable: lastmonth_activity
 ---------------
-Mean: 165.65384615384616
-Median: 73.0
-Std: 284.0332293669447
+Mean: 5625.923076923077
+Median: 425.0
+Std: 19444.774621317832
 
 Variable: lastyear_activity
 ---------------
-Mean: 1502.923076923077
-Median: 955.0
-Std: 2192.6449584568304
+Mean: 763.5384615384615
+Median: 97.5
+Std: 2016.6093569309696
 
 Variable: number_of_employees
 ---------------
-Mean: 26.884615384615383
-Median: 14.0
-Std: 31.353885785435814
+Mean: 457.46153846153845
+Median: 99.0
+Std: 800.6048328991891
 
 Variable: exited
 ---------------
-Mean: 0.5769230769230769
-Median: 1.0
-Std: 0.5038314736557788
+Mean: 0.5
+Median: 0.5
+Std: 0.5099019513592785
 
