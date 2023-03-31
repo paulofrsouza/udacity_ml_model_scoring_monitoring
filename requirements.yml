@@ -1,7 +1,7 @@
 name: flask
 dependencies:
   - python=3.9
-  - flask=1.1.2
+  - flask=2.2.2
   - pip
   - pip:
     - click==7.1.2

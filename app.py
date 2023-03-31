@@ -1,50 +1,85 @@
-from flask import Flask, session, jsonify, request
-import pandas as pd
-import numpy as np
-import pickle
-import create_prediction_model
-import diagnosis 
-import predict_exited_from_saved_model
+"""
+Script to define the moitoring and reporting API serving the trained model.
+
+Author: Paulo Souza
+Date: Mar 2023
+"""
+from flask import Flask, request
+from diagnostics import *
+from scoring import score_model
 import json
 import os
 
 
-
-######################Set up variables for use in our script
 app = Flask(__name__)
-app.secret_key = '1652d576-484a-49fd-913a-6879acfa6ba4'
+#app.secret_key = '1652d576-484a-49fd-913a-6879acfa6ba4'
 
 with open('config.json','r') as f:
-    config = json.load(f) 
+    config = json.load(f)
+dataset_csv_path = os.path.join(config['output_folder_path'])
+prod_deployment_path = os.path.join(config['prod_deployment_path'])
 
-dataset_csv_path = os.path.join(config['output_folder_path']) 
+@app.route("/prediction", methods=['GET', 'POST','OPTIONS'])
+def predict():
+    '''
+    Returns predictions from the deployed model over the given test data.
 
-prediction_model = None
+    Returns
+        preds: List
+            A list containing the model predictions for the given test data.
+    '''
+    data_path = request.args.get('data_path')
+    print(os.getcwd())
+    preds = model_predictions(data_path=data_path)
+    return preds
 
-
-#######################Prediction Endpoint
-@app.route("/prediction", methods=['POST','OPTIONS'])
-def predict():        
-    #call the prediction function you created in Step 3
-    return #add return value for prediction outputs
-
-#######################Scoring Endpoint
 @app.route("/scoring", methods=['GET','OPTIONS'])
-def stats():        
-    #check the score of the deployed model
-    return #add return value (a single F1 score number)
+def scoring():
+    '''
+    Returns the scoring performance obtained by the depoloyed model.
 
-#######################Summary Statistics Endpoint
+    Returns
+        f1: float
+            F1-score obtained by the trained model over the test data.
+    '''
+    return str(score_model())
+
 @app.route("/summarystats", methods=['GET','OPTIONS'])
-def stats():        
-    #check means, medians, and modes for each column
-    return #return a list of all calculated summary statistics
+def stats():
+    '''
+    Checks means, medians, and std for each numeric column.
 
-#######################Diagnostics Endpoint
+    Returns
+        statistic_list: List[List]
+            A list containing the summary statistics of each numeric column
+            present in the given dataset. The metrics are displayed in the
+            following order: [[mean, median, std],...]
+    '''
+    return dataframe_summary()
+
 @app.route("/diagnostics", methods=['GET','OPTIONS'])
-def stats():        
-    #check timing and percent NA values
-    return #add return value for all diagnostics
+async def diagnostics():
+    '''
+    Checks timing and percent NA values.
 
-if __name__ == "__main__":    
+    Returns
+        data_integrity: List
+            The percentages of missing observations in each numeric column of
+            the given dataset.
+        timings: List
+            A list with the timings of each process step, in seconds.
+    '''
+    data_integrity = check_data_integrity()
+    timings = execution_time()
+    dependencies = await async_outdated_packages_list()
+
+    return [
+        data_integrity,
+        '-----------------------',
+        timings,
+        '-----------------------',
+        dependencies
+    ]
+
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)

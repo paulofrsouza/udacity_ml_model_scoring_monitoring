@@ -1,4 +1,9 @@
+'''
+Automates the whole model pipeline
 
+Author: Paulo Souza
+Date: Mar 2023
+'''
 
 import training
 import scoring

@@ -26,11 +26,15 @@ if test_data_path not in current_folders:
         """
     )
 
-def score_model() -> None:
+def score_model() -> float:
     """
     Takes a trained model, loads test data, and calculates an F1 score for the
     given model relative to the test data. Lastly, it writes the result to the
     latestscore.txt file.
+    
+    Returns:
+        f1: float
+            F1-score obtained by the trained model over the test data.    
     """
 
     test_data = [el for el in os.listdir(test_data_path) if '.csv' in el]
@@ -54,7 +58,9 @@ def score_model() -> None:
 
     with open(os.path.join(model_path, "latestscore.txt"), 'w') as f:
         f.write(scoring)
+        
+    return f1
 
 
 if __name__ == '__main__':
-    score_model()
+    f1 = score_model()

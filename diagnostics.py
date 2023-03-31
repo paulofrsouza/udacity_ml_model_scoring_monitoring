@@ -14,6 +14,7 @@ from typing import List
 from textwrap import dedent
 import subprocess
 import pickle
+import asyncio
 
 with open('config.json','r') as f:
     config = json.load(f)
@@ -23,20 +24,28 @@ dataset_csv_path = os.path.join(config['output_folder_path'])
 test_data_path = os.path.join(config['test_data_path'])
 prod_deployment_path = os.path.join(config['prod_deployment_path'])
 
-def model_predictions() -> List:
+def model_predictions(
+    data_path: str = test_data_path,
+    model_path: str = prod_deployment_path
+) -> List:
     '''
-    Reads the deployed model and a test dataset, calculates predictions
+    Reads the deployed model and a test dataset, calculates predictions.
 
+    Args:
+        data_path: str
+            A path indicating where to look for test datasets.
+        model_path: str
+            A path indicating where to look for trained models.
     Returns:
         preds: List
             A list containing the model predictions for the given test data.
     '''
     with open(
-        os.path.join(prod_deployment_path, 'trainedmodel.pkl'), 'rb'
+        os.path.join(model_path, 'trainedmodel.pkl'), 'rb'
     ) as f:
         lr = pickle.load(f)
 
-    test_data = [el for el in os.listdir(test_data_path) if '.csv' in el]
+    test_data = [el for el in os.listdir(data_path) if '.csv' in el]
     final = pd.DataFrame()
     for data in test_data:
         temp = pd.read_csv(os.path.join(test_data_path, data))
@@ -48,7 +57,7 @@ def model_predictions() -> List:
     y_test = final['exited']
 
     preds = lr.predict(x_test)
-    return preds
+    return preds.tolist()
 
 def dataframe_summary() -> List[List]:
     '''
@@ -57,7 +66,7 @@ def dataframe_summary() -> List[List]:
 
     Returns
         statistic_list: List[List]
-            A list containing the summaty statistics of each numeric column
+            A list containing the summary statistics of each numeric column
             present in the given dataset. The metrics are displayed in the
             following order: [[mean, median, std],...]
     '''
@@ -153,40 +162,50 @@ def execution_time() -> List:
 
     return [ingestion_process_time, training_process_time]
 
-def outdated_packages_list() -> None:
+async def async_outdated_packages_list() -> None:
     '''
     Fetches all modules being used in the project and checks for outdated
     dependencies.
     '''
-    with open('./requirements.txt', 'r') as f:
-        reqs = f.readlines()
+    curr_files = os.listdir()
+    if 'dependency_check.csv' in curr_files:
+        final = pd.read_csv('dependency_check.csv')
+    else:
+        with open('./requirements.txt', 'r') as f:
+            reqs = f.readlines()
 
-    reqs = [el[:el.find('=')] for el in reqs]
+        reqs = [el[:el.find('=')] for el in reqs]
 
-    outdated = subprocess.check_output(['pip', 'list', '--outdated'])
-    outdated = str(outdated, 'utf-8')
-    outdated = [el.split(' ') for el in outdated.split('\n')]
-    outdated = [[s for s in el if s != ''] for el in outdated][:-1]
-    del outdated[1]
-    outdated = [el[:-1] for el in outdated]
-    outdated = pd.DataFrame(data=outdated[1:], columns=outdated[0])
-    outdated.set_index('Package', inplace=True)
+        outdated = subprocess.check_output(['pip', 'list', '--outdated'])
+        outdated = str(outdated, 'utf-8')
+        outdated = [el.split(' ') for el in outdated.split('\n')]
+        outdated = [[s for s in el if s != ''] for el in outdated][:-1]
+        del outdated[1]
+        outdated = [el[:-1] for el in outdated]
+        outdated = pd.DataFrame(data=outdated[1:], columns=outdated[0])
+        outdated.set_index('Package', inplace=True)
 
-    uptodate = subprocess.check_output(['pip', 'list', '--uptodate'])
-    uptodate = str(uptodate, 'utf-8')
-    uptodate = [el.split(' ') for el in uptodate.split('\n')]
-    uptodate = [[s for s in el if s != ''] for el in uptodate][:-1]
-    del uptodate[1]
-    uptodate = pd.DataFrame(data=uptodate[1:], columns=uptodate[0])
-    uptodate.set_index('Package', inplace=True)
-    uptodate['Latest'] = uptodate['Version']
+        uptodate = subprocess.check_output(['pip', 'list', '--uptodate'])
+        uptodate = str(uptodate, 'utf-8')
+        uptodate = [el.split(' ') for el in uptodate.split('\n')]
+        uptodate = [[s for s in el if s != ''] for el in uptodate][:-1]
+        del uptodate[1]
+        uptodate = pd.DataFrame(data=uptodate[1:], columns=uptodate[0])
+        uptodate.set_index('Package', inplace=True)
+        uptodate['Latest'] = uptodate['Version']
 
-    final = pd.concat([outdated, uptodate], axis=0)
-    final.loc[reqs, :].to_csv('./dependency_check.csv')
+        final = pd.concat([outdated, uptodate], axis=0)
+        final.loc[reqs, :].to_csv('./dependency_check.csv')
+        final.reset_index(drop=False, inplace=True)
+    
+    return [final.columns.tolist()] + final.to_numpy().tolist()
 
-if __name__ == '__main__':
+async def go():
     preds = model_predictions()
     statistic_list = dataframe_summary()
     data_integrity = check_data_integrity()
     exec_time = execution_time()
-    outdated_packages_list()
+    dependencies = await async_outdated_packages_list()
+
+if __name__ == '__main__':
+    asyncio.run(go())
